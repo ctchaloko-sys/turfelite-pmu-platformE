@@ -1,38 +1,22 @@
-name: Deploy TurfElite to GitHub Pages
+import asyncio
+from playwright.async_api import async_playwright
 
-on:
-  push:
-    branches:
-      - main
-      - master
+async def run():
+    async with async_playwright() as p:
+        browser = await p.chromium.launch()
+        page = await browser.new_page(viewport={"width": 1280, "height": 800})
+        await page.goto("http://localhost:8000/index.html")
+        await page.wait_for_timeout(1000)
 
-permissions:
-  contents: read
-  pages: write
-  id-token: write
+        # Take main home screenshot
+        await page.screenshot(path="/home/jules/verification/screenshots/updated_home.png")
 
-concurrency:
-  group: "pages"
-  cancel-in-progress: false
+        # Click VIP Request button to check pricing and form
+        await page.click("button:has-text('Demander un Accès VIP')")
+        await page.wait_for_timeout(500)
+        await page.screenshot(path="/home/jules/verification/screenshots/updated_vip_pricing_modal.png")
 
-jobs:
-  deploy:
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout Repository
-        uses: actions/checkout@v4
+        print("Verification screenshot taken successfully.")
+        await browser.close()
 
-      - name: Setup GitHub Pages
-        uses: actions/configure-pages@v5
-
-      - name: Upload Artifact
-        uses: actions/upload-pages-artifact@v3
-        with:
-          path: '.'
-
-      - name: Deploy to GitHub Pages
-        id: deployment
-        uses: actions/deploy-pages@v4
+asyncio.run(run())
